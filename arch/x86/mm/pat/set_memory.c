@@ -319,6 +319,36 @@ void clflush_cache_range(void *vaddr, unsigned int size)
 }
 EXPORT_SYMBOL_GPL(clflush_cache_range);
 
+static void clean_cache_range_opt(void *vaddr, unsigned int size)
+{
+	const unsigned long clflush_size = boot_cpu_data.x86_clflush_size;
+	void *p = (void *)((unsigned long)vaddr & ~(clflush_size - 1));
+	void *vend = vaddr + size;
+
+	if (p >= vend)
+		return;
+
+	for (; p < vend; p += clflush_size)
+		clwb(p);
+}
+
+/**
+ * clean_cache_range - write back a cache range with CLWB
+ * @vaddr:	virtual start address
+ * @size:	number of bytes to write back
+ *
+ * CLWB (cache line write back) is an unordered instruction which needs fencing
+ * with MFENCE or SFENCE to avoid ordering issues. Note that @size is
+ * internally rounded up to be cache line size aligned.
+ */
+void clean_cache_range(void *vaddr, unsigned int size)
+{
+	mb();
+	clean_cache_range_opt(vaddr, size);
+	mb();
+}
+EXPORT_SYMBOL_GPL(clean_cache_range);
+
 #ifdef CONFIG_ARCH_HAS_PMEM_API
 void arch_invalidate_pmem(void *addr, size_t size)
 {

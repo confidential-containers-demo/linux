@@ -9,5 +9,6 @@
 #include <asm/special_insns.h>
 
 void clflush_cache_range(void *addr, unsigned int size);
+void clean_cache_range(void *vaddr, unsigned int size);
 
 #endif /* _ASM_X86_CACHEFLUSH_H */
